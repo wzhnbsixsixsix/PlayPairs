@@ -1,0 +1,739 @@
+/* General Styling */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+/* Main Content */
+#main {
+  background: url("../arcade-unsplash.jpg") fixed center/cover;
+  position: relative;
+  width: 100vw;
+  min-height: 100vh;
+  padding-top: 70px;
+  overflow-y: visible;
+  transform: none !important;
+  perspective: none !important;
+}
+
+/* Game Elements */
+.content-box {
+  background-color: rgba(255, 255, 255, 0.85);
+  padding: 30px;
+  border-radius: 10px;
+  max-width: 800px;
+  width: 90%;
+  margin: 0 auto;
+}
+
+.game-container {
+  background-color: #ccc;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+  padding: 30px;
+  margin: 30px auto;
+  max-width: 1000px;
+  text-align: center;
+  
+}
+
+
+/* Cards */
+.card-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px 0;
+  transition: opacity 0.5s ease;
+}
+
+.memory-card {
+  width: 100px;
+  height: 100px;
+  background-color: #2980b9;
+  border-radius: 5px;
+  position: relative;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transition: transform 0.5s;
+}
+.memory-card.flipped,
+.memory-card.matched {
+  transform: rotateY(180deg);
+}
+.memory-card.matched {
+  cursor: default;
+}
+
+.card-front,
+.card-back {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  backface-visibility: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 5px;
+}
+.card-front {
+  background-color: white;
+  transform: rotateY(180deg);
+  font-size: 40px;
+}
+.card-back {
+  background-color: #2980b9;
+}
+
+/* Leaderboard */
+.leaderboard-table {
+  border-collapse: separate;
+  border-spacing: 2px;
+  width: 100%;
+  margin-top: 20px;
+}
+.leaderboard-table th {
+  background-color: blue;
+  color: white;
+  padding: 10px;
+  text-align: center;
+}
+.leaderboard-table td {
+  padding: 8px;
+  text-align: center;
+  background-color: #f2f2f2;
+}
+
+/* Avatar System */
+.avatar-container {
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.avatar-preview-container {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+  position: relative;
+  background-color: #f8f9fa;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+.avatar-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: center/contain no-repeat;
+}
+
+/* Selection Elements */
+.component-selector {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 15px;
+}
+.avatar-option,
+.avatar-candidate {
+  cursor: pointer;
+  border: 2px solid transparent;
+  padding: 5px;
+  border-radius: 8px;
+  transition: all 0.3s ease !important;
+}
+
+/* Interactive States */
+.btn-level-selected {
+  transform: scale(1.05);
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+}
+.gold-background {
+  background-color: #ffd700 !important;
+}
+.selected {
+  border-color: #0d6efd !important;
+  box-shadow: 0 0 0 2px #0d6efd !important;
+}
+
+/* Animations */
+@keyframes flip {
+  from {
+    transform: rotateY(0);
+  }
+  to {
+    transform: rotateY(180deg);
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(13, 110, 253, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(13, 110, 253, 0.5);
+  }
+}
+
+.flip-animation {
+  animation: flip 0.5s ease-in-out;
+}
+.game-end {
+  animation: fadeIn 1s ease;
+}
+.avatar-candidate.selected {
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+  .avatar-preview-container {
+    width: 120px;
+    height: 120px;
+  }
+}
+
+/* Utility */
+.error-message {
+  color: red;
+  font-size: 14px;
+  margin-top: 5px;
+}
+.emoji-avatar {
+  font-size: 1.5rem;
+  margin-left: 10px;
+}
+
+/* music */
+/* 修改styles.css */
+/* #button-container-1 {
+  cursor: grab;
+  transition: transform 0.2s;
+} */
+
+/* #button-container-1:hover {
+  transform: scale(1.1);
+  cursor: grabbing;
+} */
+
+/* 确保导航栏层级 */
+.navbar {
+  z-index: 999 !important;
+}
+
+/* 音乐按钮样式 */
+
+/* 测试 */
+
+#button-container-1 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50px;
+  width: 50px;
+  position: relative;
+}
+.music-btn {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.visual-layer,
+.animation- {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+
+/* 保证按钮始终在最上层 */
+#button-container-1 button {
+  z-index: 10;
+}
+
+/* 动画层放在较低层，并禁用鼠标事件 */
+#button-container-1.visual-layer,
+#button-container-1.animation-layer {
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* 默认让动画运行 */
+#button-container-1 .visual-layer .animation-layer {
+  animation-play-state: running !important;
+}
+
+/* 当按钮没有 .playing 状态时暂停动画 */
+#button-container-1 button:not(.playing) ~ .visual-layer .animation-layer {
+  animation-play-state: paused;
+}
+
+#button-container-1 > div {
+  width: 50px;
+  height: 50px;
+  background: #000;
+  position: relative;
+  cursor: pointer;
+  border-radius: 100px;
+  transition: border-radius 0.75s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.25s,
+    box-shadow 0.35s ease-in-out 0s;
+  box-shadow: inset 0 0 0 0px #000, inset 0 0 0 -2px #fff;
+  overflow: hidden;
+}
+#button-container-1 > div:before,
+#button-container-1 > div:after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  z-index: 9;
+  transition: opacity 0.3s ease-in-out;
+  background: conic-gradient(
+    #5454bb 0%,
+    #b757aa 11%,
+    #e76e91 21%,
+    #fc9783 31%,
+    #fdc48b 41%,
+    #f7f1b1 51%,
+    #ffeab8 61%,
+    #ffe1bd 71%,
+    #ffdcc7 80%,
+    #b757aa 90%,
+    #5454bb 100%
+  );
+  mix-blend-mode: darken;
+  border-radius: inherit;
+  pointer-events: none;
+  /* 标准属性 */
+  mask: radial-gradient(circle at center, transparent 50%, #000 25%);
+  /* 浏览器前缀 */
+  -webkit-mask: radial-gradient(circle at center, transparent 50%, #000 25%);
+  -moz-mask: radial-gradient(circle at center, transparent 50%, #000 25%);
+  -ms-mask: radial-gradient(circle at center, transparent 50%, #000 25%);
+  opacity: 0.75;
+  animation: spin 2s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+#button-container-1 > div:after {
+  opacity: 0;
+  width: 150%;
+  height: 150%;
+  left: -25%;
+  top: -25%;
+  /* 标准属性 */
+  mask: radial-gradient(circle at center, transparent 50%, #000 25%);
+  /* 浏览器前缀 */
+  -webkit-mask: radial-gradient(circle at center, transparent 50%, #000 25%);
+  -moz-mask: radial-gradient(circle at center, transparent 50%, #000 25%);
+  -ms-mask: radial-gradient(circle at center, transparent 50%, #000 25%);
+}
+#button-container-1 > div > div {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background: linear-gradient(to bottom, #222 50%, #fff 50%) 50% -50px/100% 200%
+      no-repeat,
+    #fff;
+  transition: clip-path 0.3s cubic-bezier(0.9, 0.885, 0.32, 1),
+    transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out,
+    background-position 0.3s ease-in-out;
+  transition-delay: 0.5s, 0.125s;
+  transform: scale(0.35) translateX(12.5%);
+  clip-path: polygon(0 0, 100% 50%, 100% 50%, 0% 100%);
+}
+#button-container-1 > div > div:before,
+#button-container-1 > div > div:after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background: linear-gradient(to bottom, #000 50%, transparent 50%) 0px 0px/50%
+      200% no-repeat,
+    linear-gradient(
+        to right,
+        transparent 40%,
+        #000 40%,
+        #000 60%,
+        transparent 60%
+      )
+      50% 50%/100% 100% no-repeat,
+    #fff;
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out,
+    background-size 0.3s ease-in-out;
+  z-index: 2;
+}
+#button-container-1 > div > div:before {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -25%) scaleY(0) scaleX(0.5);
+  transform-origin: top;
+}
+#button-container-1 > div > div:after {
+  z-index: 3;
+  opacity: 0;
+  background: linear-gradient(
+        to right,
+        #5454bb calc((100 / 6) * 1%),
+        #b757aa calc((100 / 6) * 1%),
+        #b757aa calc((100 / 6) * 2%),
+        #e76e91 calc((100 / 6) * 2%),
+        #e76e91 calc((100 / 6) * 3%),
+        #fc9783 calc((100 / 6) * 3%),
+        #fc9783 calc((100 / 6) * 4%),
+        #fdc48b calc((100 / 6) * 4%),
+        #fdc48b calc((100 / 6) * 5%),
+        #f7f1b1 calc((100 / 6) * 5%),
+        #f7f1b1 calc((100 / 6) * 6%)
+      )
+      50% 50%/100% 0px,
+    radial-gradient(
+        circle at bottom,
+        #5454bb 10px,
+        #b757aa 12px,
+        transparent 14px
+      )
+      0px 100%/30px 20px repeat-x,
+    radial-gradient(
+        circle at bottom,
+        #5454bb 8px,
+        #b757aa 10px,
+        transparent 12px
+      )
+      10px 100%/30px 20px repeat-x,
+    linear-gradient(
+      to top,
+      #5454bb -50%,
+      #b757aa 11%,
+      #e76e91 21%,
+      #fc9783 31%,
+      #fdc48b 41%,
+      #f7f1b1 51%,
+      #ffeab8 61%,
+      #ffe1bd 71%,
+      #ffdcc7 80%,
+      #ffdad1 90%,
+      #fbd5d5 100%
+    );
+  background-size: 100% 0px, 30px 20px, 30px 20px, 100% 100%;
+  mix-blend-mode: darken;
+  animation: float 6s linear infinite;
+}
+@keyframes float {
+  from {
+    background-position: 50% 50%, 0px calc(100% + 5px), 15px 100%, 50% 50%;
+  }
+  to {
+    background-position: 50% 50%, -145px calc(100% + 5px), -130px 100%, 50% 50%;
+  }
+}
+#button-container-1 > div > div span {
+  position: absolute;
+  width: calc((100% / 6) + 2px);
+  height: 125%;
+  background: #fff;
+  bottom: 0;
+  box-shadow: 0 0 0 1px #fff, inset 0 0 0 0px #000;
+  animation: play calc(-2 * var(--timing)) ease-in-out 0 alternate;
+  transform-origin: bottom;
+  --delay: -0.5;
+  --timing: -1.25s;
+  --low: 0px;
+  --mid: 0px;
+  --high: 0px;
+  transition: clip-path 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  clip-path: polygon(0 100%, 100% 100%, 100% 100%, 0% 100%);
+}
+#button-container-1 > div > div span:nth-of-type(3n) {
+  --delay: -0.15;
+  --timing: -1s;
+}
+#button-container-1 > div > div span:nth-of-type(4) {
+  --delay: -0.35;
+  --timing: -0.5s;
+}
+@keyframes play {
+  0%,
+  100% {
+    transform: translateY(var(--high));
+  }
+  25%,
+  75% {
+    transform: translateY(var(--low));
+  }
+  50% {
+    transform: translateY(var(--mid));
+  }
+}
+#button-container-1 > div > div span:nth-of-type(1) {
+  left: calc(0% - 1px);
+  animation-delay: calc(0.5s * var(--delay) + 0.5s);
+}
+#button-container-1 > div > div span:nth-of-type(2) {
+  left: calc(16.6666666667% - 1px);
+  animation-delay: calc(1s * var(--delay) + 0.5s);
+}
+#button-container-1 > div > div span:nth-of-type(3) {
+  left: calc(33.3333333333% - 1px);
+  animation-delay: calc(1.5s * var(--delay) + 0.5s);
+}
+#button-container-1 > div > div span:nth-of-type(4) {
+  left: calc(50% - 1px);
+  animation-delay: calc(2s * var(--delay) + 0.5s);
+}
+#button-container-1 > div > div span:nth-of-type(5) {
+  left: calc(66.6666666667% - 1px);
+  animation-delay: calc(2.5s * var(--delay) + 0.5s);
+}
+#button-container-1 > div > div span:nth-of-type(6) {
+  left: calc(83.3333333333% - 1px);
+  animation-delay: calc(3s * var(--delay) + 0.5s);
+}
+#button-container-1 button:not(.playing):hover ~ div {
+  box-shadow: inset 0 0 0 5px #000, inset 0 0 0 6.5px #fff,
+    0 5px 15px -5px rgba(0, 0, 0, 0.75);
+}
+#button-container-1 button:not(.playing):hover ~ div > div:after {
+  opacity: 0.75;
+  transform: scale(2) translateY(-25%);
+}
+#button-container-1 button.playing {
+  animation: noClick 2s linear 1 forwards;
+}
+@keyframes noClick {
+  0%,
+  75% {
+    pointer-events: none;
+  }
+}
+#button-container-1 button.playing ~ div {
+  border-radius: 0px;
+  transition: border-radius 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0s,
+    box-shadow 0.35s ease-in-out 0s;
+  box-shadow: inset 0 0 0 2px #000, inset 0 0 0 -2px #fff,
+    0 5px 15px -5px rgba(0, 0, 0, 0.75);
+}
+#button-container-1 button.playing ~ div:before {
+  opacity: 0;
+}
+#button-container-1 button.playing ~ div > div {
+  transition: clip-path 0.3s ease-in-out, transform 0.3s ease-in-out,
+    background-position 0.6s ease-in-out;
+  background-position: 50% 0px;
+  transform: scale(0.75);
+  transition-delay: 0s, 0s, 0s;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
+  overflow: hidden;
+}
+#button-container-1 button.playing ~ div > div:after {
+  opacity: 0.75;
+  transition-delay: 0.5s, 0.5s, 0s;
+}
+#button-container-1 button.playing ~ div > div > span {
+  box-shadow: 0 0 0 -1px #fff, inset 0 0 0 3px #000;
+  --low: 35px;
+  --mid: 20px;
+  --high: 10px;
+  animation-iteration-count: infinite;
+  transition-delay: 0.3s, 0.6s;
+}
+#button-container-1 button.playing:not(:hover) ~ div > div:after {
+  background-size: 100% 100%, 30px 20px, 30px 20px, 100% 100%;
+}
+#button-container-1 button.playing:not(:hover) ~ div > div > span {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
+}
+#button-container-1 button.playing:hover ~ div {
+  box-shadow: inset 0 0 0 5px #000, inset 0 0 0 7px #fff,
+    0 5px 15px -5px rgba(0, 0, 0, 0.75);
+}
+#button-container-1 button.playing:hover ~ div:after {
+  opacity: 0.75;
+  transition-delay: 0s;
+}
+#button-container-1 button.playing:hover ~ div > div:before {
+  transform: translate(-50%, -25%) scaleY(0.5) scaleX(0.5);
+  transition-delay: 0s, 0s, 0.125s;
+  background-position: 0px 100%, 50%, 50%;
+}
+#button-container-1 button.playing:hover ~ div > div:after {
+  transform: scale(2) translateY(-25%);
+}
+#button-container-1 button.playing:hover ~ div > div span {
+  clip-path: polygon(0 100%, 100% 100%, 100% 100%, 0% 100%);
+  transition-delay: 0s, 0.3s;
+}
+
+/* start button style */
+
+.voltage-button {
+  transform: scale(0.7);
+  position: relative;
+}
+.voltage-button button {
+  color: white;
+  background: #0d1127;
+  padding: 1.6rem 5rem 1.8rem 5rem;
+  border-radius: 5rem;
+  border: 5px solid #5978f3;
+  font-size: 1.8rem;
+  line-height: 1em;
+  letter-spacing: 0.075em;
+  transition: background 0.3s;
+}
+.voltage-button button:hover {
+  cursor: pointer;
+  background: #0f1c53;
+}
+.voltage-button button:hover + svg,
+.voltage-button button:hover + svg + .dots {
+  opacity: 1;
+}
+.voltage-button svg {
+  display: block;
+  position: absolute;
+  top: -0.75em;
+  left: -0.25em;
+  width: calc(100% + 0.5em);
+  height: calc(100% + 1.5em);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s;
+  transition-delay: 0.1s;
+}
+.voltage-button svg path {
+  stroke-dasharray: 100;
+  filter: url("#glow");
+}
+.voltage-button svg path.line-1 {
+  stroke: #f6de8d;
+  stroke-dashoffset: 0;
+  animation: spark-1 3s linear infinite;
+}
+.voltage-button svg path.line-2 {
+  stroke: #6bfeff;
+  stroke-dashoffset: 500;
+  animation: spark-2 3s linear infinite;
+}
+.voltage-button .dots {
+  opacity: 0;
+  transition: opacity 0.3s;
+  transition-delay: 0.4s;
+}
+.voltage-button .dots .dot {
+  width: 1rem;
+  height: 1rem;
+  background: white;
+  border-radius: 100%;
+  position: absolute;
+  opacity: 0;
+}
+.voltage-button .dots .dot-1 {
+  top: 0;
+  left: 20%;
+  animation: fly-up 3s linear infinite;
+}
+.voltage-button .dots .dot-2 {
+  top: 0;
+  left: 55%;
+  animation: fly-up 3s linear infinite;
+  animation-delay: 0.5s;
+}
+.voltage-button .dots .dot-3 {
+  top: 0;
+  left: 80%;
+  animation: fly-up 3s linear infinite;
+  animation-delay: 1s;
+}
+.voltage-button .dots .dot-4 {
+  bottom: 0;
+  left: 30%;
+  animation: fly-down 3s linear infinite;
+  animation-delay: 2.5s;
+}
+.voltage-button .dots .dot-5 {
+  bottom: 0;
+  left: 65%;
+  animation: fly-down 3s linear infinite;
+  animation-delay: 1.5s;
+}
+
+@keyframes spark-1 {
+  to {
+    stroke-dashoffset: -1000;
+  }
+}
+@keyframes spark-2 {
+  to {
+    stroke-dashoffset: -500;
+  }
+}
+@keyframes fly-up {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.2);
+  }
+  5% {
+    opacity: 1;
+    transform: translateY(-1.5rem) scale(0.4);
+  }
+  10%,
+  100% {
+    opacity: 0;
+    transform: translateY(-3rem) scale(0.2);
+  }
+}
+@keyframes fly-down {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.2);
+  }
+  5% {
+    opacity: 1;
+    transform: translateY(1.5rem) scale(0.4);
+  }
+  10%,
+  100% {
+    opacity: 0;
+    transform: translateY(3rem) scale(0.2);
+  }
+}
+
+
+
+
+
+
