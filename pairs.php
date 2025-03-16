@@ -1,16 +1,23 @@
 <?php
-session_start();
-$leaderboardHighScores = ['1' => 0, '2' => 0, '3' => 0];
-if (isset($_SESSION['leaderboard'])) {
-    foreach (['1', '2', '3'] as $level) {
-        foreach ($_SESSION['leaderboard'] as $entry) {
-            $scoreKey = 'level' . $level;
-            if (isset($entry[$scoreKey]) && $entry[$scoreKey] > $leaderboardHighScores[$level]) {
-                $leaderboardHighScores[$level] = $entry[$scoreKey];
-            }
-        }
+// 修复后的Cookie处理逻辑
+if (isset($_COOKIE['leaderboard'])) {
+    $leaderboardHighScores = unserialize($_COOKIE['leaderboard']); // 改为unserialize    
+    // 新增验证步骤：确保解码后是有效数组
+    if (!is_array($leaderboardHighScores)) {
+        $leaderboardHighScores = ['1' => 0, '2' => 0, '3' => 0];
+    }
+} else {
+    $leaderboardHighScores = ['1' => 0, '2' => 0, '3' => 0];
+}
+
+// 新增键值存在性检查
+foreach (['1', '2', '3'] as $level) {
+    if (!isset($leaderboardHighScores[$level]) || $leaderboardHighScores[$level] < 0) {
+        $leaderboardHighScores[$level] = 0;
     }
 }
+
+setcookie('leaderboard', serialize($leaderboardHighScores), time() + 3600, "/"); // 改为serialize
 ?>
 <script>
     const leaderboardHighScores = <?php echo json_encode($leaderboardHighScores); ?>;
@@ -28,7 +35,7 @@ if (isset($_SESSION['leaderboard'])) {
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/levelchoice.css">
     <link rel="stylesheet" href="css/submit.css">
-    
+
     <!-- Add canvas-confetti library -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
@@ -73,16 +80,9 @@ if (isset($_SESSION['leaderboard'])) {
                 </div>
             </div>
 
-            <!-- 游戏等级 -->
-            <!-- <div id="level-container" class="mb-3">
-                <button id="level-1" class="btn btn-primary me-2">Simple</button>
-                <button id="level-2" class="btn btn-secondary me-2">Medium</button>
-                <button id="level-3" class="btn btn-secondary">Complex</button>
-            </div> -->
-
             <div class="level-container">
                 <div class="radio-wrapper">
-                    <input class="input " name="btn" id="level-1" type="radio">
+                    <input class="input " name="btn" id="level-1" type="radio" checked="true">
                     <div class="btn1">
                         <span aria-hidden="">_</span>Simple
                         <span class="btn1__glitch" aria-hidden="">_Simple</span>
@@ -100,7 +100,7 @@ if (isset($_SESSION['leaderboard'])) {
                 </div>
 
                 <div class="radio-wrapper">
-                    <input class="input" name="btn" id="level-3" checked="true" type="radio">
+                    <input class="input" name="btn" id="level-3"  type="radio">
                     <div class="btn1">
                         Complex<span aria-hidden="">_</span>
                         <span class="btn1__glitch" aria-hidden="">Complex</span>
@@ -154,7 +154,7 @@ if (isset($_SESSION['leaderboard'])) {
                 <p>Your final score: <span id="final-score">0</span></p>
                 <p>Time taken: <span id="final-time">0</span> seconds</p>
 
-                <?php if (isset($_SESSION['username'])): ?>
+                <?php if (isset($_COOKIE['username'])): ?>
                     <div class="mt-3">
                         <!-- 使用表单包装霓虹按钮 -->
                         <form action="submit_score.php" method="post">
@@ -317,7 +317,9 @@ if (isset($_SESSION['leaderboard'])) {
             const musicBtn = document.querySelector('#button-container-1 .music-btn');
             document.querySelector('#button-container-1 .music-btn').classList.add('playing');
             // 新增音乐控制逻辑
-            const musicControl = document.getElementById('music-control');
+            const musicControl = document.getElementById('bgMusic');
+            // const musicControl = document.getElementById('music-control');
+
             if (window.bgMusic) {
                 if (window.bgMusic.paused) {
                     window.bgMusic.play().then(() => {
@@ -657,7 +659,7 @@ if (isset($_SESSION['leaderboard'])) {
             // Play success sound
             successSound.currentTime = 0;
             successSound.play();
-            
+
             // Show grand confetti celebration for game completion
             triggerConfetti(true);
 
@@ -676,16 +678,12 @@ if (isset($_SESSION['leaderboard'])) {
         function submitScore() {
             // Create form data
             const formData = new FormData();
-
-            // 根据当前游戏模式确定存储字段
-            let levelKey = `level_${gameState.level}`;
-            formData.append(levelKey, gameState.score);
-            formData.append('total_score', gameState.score);
+            formData.append(`level_${gameState.level}`, gameState.score); // 提交当前关卡分数
 
             // 其他关卡保持0值
-            [1, 2, 3].filter(l => l !== gameState.level).forEach(l => {
-                formData.append(`level_${l}`, 0);
-            });
+            // [1, 2, 3].filter(l => l !== gameState.level).forEach(l => {
+            //     formData.append(`level_${l}`, 0);
+            // });
 
             // Send POST request to leaderboard.php
             fetch('leaderboard.php', {
@@ -694,7 +692,7 @@ if (isset($_SESSION['leaderboard'])) {
                 })
                 .then(response => response.text())
                 .then(data => {
-                    if (data === 'success') {
+                    if (data.includes('success')) { // 修改这里
                         // Redirect to leaderboard
                         window.location.href = 'leaderboard.php';
                     } else {
@@ -783,40 +781,53 @@ if (isset($_SESSION['leaderboard'])) {
             }
             return newArray;
         }
-        
+
         // Function to trigger confetti celebration
         function triggerConfetti(isGameEnd = false) {
             // Default confetti for level completion
             const options = {
                 particleCount: 100,
                 spread: 70,
-                origin: { y: 0.6 }
+                origin: {
+                    y: 0.6
+                }
             };
-            
+
             // More elaborate confetti for game end
             if (isGameEnd) {
                 // Create a grand finale with multiple bursts
                 const duration = 3000;
                 const animationEnd = Date.now() + duration;
-                const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-                
+                const defaults = {
+                    startVelocity: 30,
+                    spread: 360,
+                    ticks: 60,
+                    zIndex: 0
+                };
+
                 const interval = setInterval(function() {
                     const timeLeft = animationEnd - Date.now();
-                    
+
                     if (timeLeft <= 0) {
                         return clearInterval(interval);
                     }
-                    
+
                     const particleCount = 50 * (timeLeft / duration);
-                    
+
                     // Random colors and positions
-                    confetti(Object.assign({}, defaults, { 
+                    confetti(Object.assign({}, defaults, {
                         particleCount,
-                        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+                        origin: {
+                            x: randomInRange(0.1, 0.3),
+                            y: Math.random() - 0.2
+                        }
                     }));
-                    confetti(Object.assign({}, defaults, { 
+                    confetti(Object.assign({}, defaults, {
                         particleCount,
-                        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+                        origin: {
+                            x: randomInRange(0.7, 0.9),
+                            y: Math.random() - 0.2
+                        }
                     }));
                 }, 250);
             } else {
@@ -824,7 +835,7 @@ if (isset($_SESSION['leaderboard'])) {
                 confetti(options);
             }
         }
-        
+
         // Helper function for random range
         function randomInRange(min, max) {
             return Math.random() * (max - min) + min;

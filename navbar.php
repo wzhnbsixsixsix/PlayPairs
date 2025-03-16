@@ -1,97 +1,97 @@
 <?php
-// 修改后的会话启动方式（带状态检查）
-if (session_status() === PHP_SESSION_NONE) {
-    session_id(uniqid());
-    session_start();
-}
-
-// 新增会话活性检测
-if (isset($_SESSION['LAST_ACTIVITY']) && (time() - $_SESSION['LAST_ACTIVITY'] > 1800)) {
-    session_unset();
-    session_destroy();
-}
-$_SESSION['LAST_ACTIVITY'] = time();
-
-// 防止会话固定攻击
-if (!isset($_SESSION['CREATED'])) {
-    $_SESSION['CREATED'] = time();
-} elseif (time() - $_SESSION['CREATED'] > 1800) {
-    session_regenerate_id(true);
-    $_SESSION['CREATED'] = time();
-}
+// 设置 cookie 过期时间为 30 分钟后
+$cookieExpire = time() + 1800;
 
 // 处理注销请求
+// 处理注销请求
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
-    // 删除头像文件（如果存在）
-    if (isset($_SESSION['avatar']) && file_exists($_SESSION['avatar'])) {
-        if (isset($_SESSION['username']) && strpos($_SESSION['avatar'], $_SESSION['username']) !== false) {
-            unlink($_SESSION['avatar']);
+    // 先获取用户名（操作前仍存在cookie中）
+    $username = $_COOKIE['username'] ?? '';
+
+    // 删除头像文件（文件名包含用户名时才删除）
+    if (isset($_COOKIE['avatar']) && file_exists($_COOKIE['avatar'])) {
+        if (strpos($_COOKIE['avatar'], $username) !== false) {
+            unlink($_COOKIE['avatar']);
         }
     }
 
-    // 清除会话
-    session_regenerate_id(true);
-    session_unset();
-    session_destroy();
-
-    // 清除客户端 Cookie
+    // 清除用户身份cookie
     setcookie("username", "", time() - 3600, "/");
     setcookie("avatar", "", time() - 3600, "/");
+
+    // 处理排行榜数据（需在清除cookie前获取用户名）
+    if (isset($_COOKIE['leaderboard'])) {
+        $leaderboard = unserialize($_COOKIE['leaderboard']);
+        if (is_array($leaderboard)) {
+            // 过滤当前用户的所有记录
+            $leaderboard = array_filter($leaderboard, function($entry) use ($username) {
+                return ($entry['username'] ?? '') !== $username;
+            });
+            // 保存更新后的排行榜
+            setcookie('leaderboard', serialize($leaderboard), time() + 3600, '/');
+        }
+    }
 
     header("Location: index.php");
     exit();
 }
+
+    
+// 如果用户已登录，则延长 cookie 有效期
+if (isset($_COOKIE['username'])) {
+    setcookie("username", $_COOKIE['username'], $cookieExpire, "/");
+    if (isset($_COOKIE['avatar'])) {
+        setcookie("avatar", $_COOKIE['avatar'], $cookieExpire, "/");
+    }
+}
 ?>
-<!-- 新增：永久存在的背景音乐播放器 -->
+<!-- 以下为 HTML 代码 -->
+<!-- 永久存在的背景音乐播放器 -->
 <audio id="bgMusic" src="bgmusic.mp3" loop data-turbo-permanent style="display:none;"></audio>
 <link rel="stylesheet" href="css/logout.css">
 <link rel="stylesheet" href="css/navbutton.css">
 <!-- 导航栏 -->
 <nav class="navbar navbar-expand-lg navbar-dark">
     <div class="container navbut1 navbar-container">
-
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
-
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav w-100">
-
                 <li class="nav-item">
                     <a class="nav-link navbar-item" href="index.php">Home<span class="navbar-item_label">Home</span></a>
                 </li>
-
                 <li class="nav-item">
                     <a class="nav-link navbar-item" href="pairs.php">Play Pairs<span class="navbar-item_label">Play Pairs</span></a>
                 </li>
-
-                <?php if (isset($_SESSION['username'])): ?>
+                <?php if (isset($_COOKIE['username'])): ?>
                     <li class="nav-item">
                         <a class="nav-link navbar-item" href="leaderboard.php">Leaderboard<span class="navbar-item_label">Leaderboard</span></a>
                     </li>
                     <li class="nav-item ms-lg-3">
-                        <img src="<?= $_SESSION['avatar'] ?? 'default_avatar.png' ?>"
+                        <img src="<?= $_COOKIE['avatar'] ?? 'default_avatar.png' ?>"
                             class="rounded-circle border border-3 border-white"
                             width="40"
                             height="40"
                             alt="User Avatar">
                     </li>
                     <li class="nav-item ms-2">
-                        <form method="post" class="d-inline">
-                            <button type="submit" name="logout"
+                        <form method="post" class="d-inline" action="navbar.php">
+                            <button type="submit" name="logout" 
                                 class="logout"
-                                onclick="return confirm('Are you sure you want to logout?')">
-                                <div class="sign"><svg viewBox="0 0 512 512">
+                                onclick="return confirm('Are you sure you want to logout?Logging out will permanently delete your account.')">
+                                <div class="sign">
+                                    <svg viewBox="0 0 512 512">
                                         <path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path>
-                                    </svg></div>
+                                    </svg>
+                                </div>
                                 <div class="text">Logout</div>
                             </button>
                         </form>
                     </li>
-
                 <?php else: ?>
                     <li class="nav-item">
-                        <a class="nav-link navbar-item" href="registration.php">Register<span class="navbar-item_label">Home</span></a>
+                        <a class="nav-link navbar-item" href="registration.php">Register<span class="navbar-item_label">Register</span></a>
                     </li>
                 <?php endif; ?>
             </ul>

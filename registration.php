@@ -1,26 +1,30 @@
 <?php
-session_start();
+// 注销处理：通过 GET 参数 action=logout
 if (isset($_GET['action']) && $_GET['action'] === 'logout') {
-    if (isset($_SESSION['avatar']) && file_exists($_SESSION['avatar'])) {
+    if (isset($_COOKIE['avatar']) && file_exists($_COOKIE['avatar'])) {
         // 安全验证：确保文件名包含用户名
-        if (isset($_SESSION['username']) && strpos($_SESSION['avatar'], $_SESSION['username']) !== false) {
-            unlink($_SESSION['avatar']);
+        if (isset($_COOKIE['username']) && strpos($_COOKIE['avatar'], $_COOKIE['username']) !== false) {
+            unlink($_COOKIE['avatar']);
         }
     }
-    session_destroy();
+    // 清空所有相关 cookie（设置过期时间为过去）
+    setcookie("username", "", time() - 3600, "/");
+    setcookie("avatar", "", time() - 3600, "/");
+    setcookie("avatar_type", "", time() - 3600, "/");
     header("Location: registration.php");
     exit();
 }
+
 $error = "";
 $username = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = trim($_POST["username"]);
 
-    // 新增：删除旧头像
-    if (isset($_SESSION['username']) && isset($_SESSION['avatar'])) {
-        $oldAvatar = $_SESSION['avatar'];
-        if (file_exists($oldAvatar) && strpos($oldAvatar, $_SESSION['username']) !== false) {
+    // 新增：删除旧头像（改为从 cookie 中读取）
+    if (isset($_COOKIE['username']) && isset($_COOKIE['avatar'])) {
+        $oldAvatar = $_COOKIE['avatar'];
+        if (file_exists($oldAvatar) && strpos($oldAvatar, $_COOKIE['username']) !== false) {
             unlink($oldAvatar);
         }
     }
@@ -37,8 +41,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($hasInvalidChar) {
         $error = "Username contains invalid characters. Please avoid using ” ! @ # % &ˆ* ( ) + = { } [ ] — ; : “ ’ < > ? /";
     } else {
-        $_SESSION['username'] = $username;
-
+        // 处理头像生成，存储结果到局部变量，稍后写入 Cookie
+        $avatar_type = "";
+        $avatar = "";
+        
         // 根据头像类型处理
         if ($_POST['avatar-type'] == 'default') {
             // 默认头像固定使用以下组件
@@ -55,8 +61,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $success = generateAvatar($skin, $eyes, $mouth, $default_avatar_filename);
 
             if ($success) {
-                $_SESSION['avatar_type'] = 'default';
-                $_SESSION['avatar'] = $default_avatar_filename;
+                $avatar_type = 'default';
+                $avatar = $default_avatar_filename;
             }
         } else if ($_POST['avatar-type'] == 'custom') {
             // 自定义头像：从表单获取组件（自定义区内的 radio 按钮）
@@ -73,11 +79,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $success = generateAvatar($skin, $eyes, $mouth, $avatar_filename);
 
             if ($success) {
-                $_SESSION['avatar_type'] = 'custom';
-                $_SESSION['avatar'] = $avatar_filename;
+                $avatar_type = 'custom';
+                $avatar = $avatar_filename;
             } else {
-                $_SESSION['avatar_type'] = 'default';
-                $_SESSION['avatar'] = 'default_avatar.png';
+                $avatar_type = 'default';
+                $avatar = 'default_avatar.png';
             }
         } else if ($_POST['avatar-type'] == 'random') {
             // 随机头像：从隐藏输入中获取候选头像的组合
@@ -94,19 +100,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $success = generateAvatar($skin, $eyes, $mouth, $avatar_filename);
 
             if ($success) {
-                $_SESSION['avatar_type'] = 'random';
-                $_SESSION['avatar'] = $avatar_filename;
+                $avatar_type = 'random';
+                $avatar = $avatar_filename;
             } else {
-                $_SESSION['avatar_type'] = 'default';
-                $_SESSION['avatar'] = 'default_avatar.png';
+                $avatar_type = 'default';
+                $avatar = 'default_avatar.png';
             }
         }
 
+        // 设置 Cookie 并重定向（有效期设置为 30 天）
+        setcookie("username", $username, time() + (86400 * 30), "/", "", false, true);
+        setcookie("avatar", $avatar, time() + (86400 * 30), "/", "", false, true);
+        setcookie("avatar_type", $avatar_type, time() + (86400 * 30), "/", "", false, true);
 
-
-        // 设置Cookie并重定向
-        setcookie("username", $username, time() + (86400 * 30), "/", "", false, true); // 增加 httponly
-        setcookie("avatar", $_SESSION['avatar'], time() + (86400 * 30), "/", "", false, true);
         header("Location: index.php");
         exit();
     }
@@ -165,14 +171,12 @@ function generateAvatar($skin, $eyes, $mouth, $output_file)
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Pairs Game</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <link rel="stylesheet" href="css/styles.css">
 </head>
 
 <body>
     <?php include 'navbar.php'; ?>
 
-   
     <div id="main" class="container-fluid d-flex align-items-center justify-content-center">
         <div class="content-box p-4 rounded">
             <h2 class="mb-4">Register a Profile</h2>
@@ -343,7 +347,6 @@ function generateAvatar($skin, $eyes, $mouth, $output_file)
         }
 
         // 生成随机候选头像
-        //思路：先生成随机号码，然后用innerHTML生成四个div，用来展示头像
         function generateRandomCandidates() {
             const container = document.getElementById("random-candidates");
             container.innerHTML = "";
@@ -352,7 +355,6 @@ function generateAvatar($skin, $eyes, $mouth, $output_file)
                 const skinNum = Math.floor(Math.random() * 3) + 1; // 1～3
                 const eyesNum = Math.floor(Math.random() * 6) + 1; // 1～6
                 const mouthNum = Math.floor(Math.random() * 6) + 1; // 1～6
-                // 创建候选头像容器
                 const candidate = document.createElement("div");
                 candidate.classList.add("avatar-preview-container", "avatar-candidate");
                 candidate.setAttribute("data-skin", "skin" + skinNum);
@@ -366,10 +368,9 @@ function generateAvatar($skin, $eyes, $mouth, $output_file)
                 candidate.addEventListener("click", function() {
                     document.querySelectorAll(".avatar-candidate").forEach(c => {
                         c.classList.remove("selected");
-                        c.style.transform = "none"; // 新增重置
+                        c.style.transform = "none";
                     });
                     candidate.classList.add("selected");
-                    // 更新随机头像的隐藏输入
                     document.getElementById("random-skin").value = candidate.getAttribute("data-skin");
                     document.getElementById("random-eyes").value = candidate.getAttribute("data-eyes");
                     document.getElementById("random-mouth").value = candidate.getAttribute("data-mouth");
@@ -381,28 +382,19 @@ function generateAvatar($skin, $eyes, $mouth, $output_file)
         // 修改单选框切换事件处理
         document.getElementById('default-avatar').addEventListener('change', function() {
             setDefaultPreview();
-            // 仅控制选项卡片本身的展开/收起状态
             document.getElementById('custom-options-container').style.display = 'none';
             document.getElementById('random-candidates').innerHTML = '';
         });
 
-        // Modify these event handlers to prevent affecting the background
-
-        // For custom avatar
         document.getElementById('custom-avatar').addEventListener('change', function(event) {
-            // Stop propagation to prevent affecting parent elements
             event.stopPropagation();
-
             updateCustomPreview();
             document.getElementById('custom-options-container').style.display = 'block';
-            document.querySelector('#random-candidates').innerHTML = ''; // Clear random candidates
+            document.querySelector('#random-candidates').innerHTML = '';
         });
 
-        // For random avatar
         document.getElementById('random-avatar').addEventListener('change', function(event) {
-            // Stop propagation to prevent affecting parent elements
             event.stopPropagation();
-
             generateRandomCandidates();
             document.getElementById('custom-options-container').style.display = 'none';
         });
@@ -413,7 +405,6 @@ function generateAvatar($skin, $eyes, $mouth, $output_file)
             generateRandomCandidates();
         });
 
-        // 为自定义选项绑定点击事件
         function setupOptionHandlers(options) {
             options.forEach(option => {
                 option.addEventListener('click', function() {
@@ -436,18 +427,13 @@ function generateAvatar($skin, $eyes, $mouth, $output_file)
         setupOptionHandlers(eyesOptions);
         setupOptionHandlers(mouthOptions);
 
-        // 修改window.load事件处理
         window.addEventListener('load', function() {
             setDefaultPreview();
             updateCustomPreview();
             document.getElementById('custom-options-container').style.display = 'none';
-
-
-
         });
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>
