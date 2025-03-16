@@ -537,7 +537,8 @@ setcookie('leaderboard', serialize($leaderboardHighScores), time() + 3600, "/");
 
                     // Check if all flipped cards match
                     const allMatch = gameState.flippedCards.every(c =>
-                        c.dataset.value === gameState.flippedCards[0].dataset.value);
+                        c.dataset.seed === gameState.flippedCards[0].dataset.seed);
+
 
                     if (allMatch) {
                         // Match found
