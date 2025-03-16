@@ -1,33 +1,40 @@
 <?php
-// 设置 cookie 过期时间为 30 分钟后
+// Set cookie expiration time to 30 minutes from now
 $cookieExpire = time() + 1800;
 
-// 处理注销请求
-// 处理注销请求
+// Handle logout request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
-    // 先获取用户名（操作前仍存在cookie中）
+    // Retrieve username from cookie before it is cleared
     $username = $_COOKIE['username'] ?? '';
 
-    // 删除头像文件（文件名包含用户名时才删除）
+    // Delete avatar file if it exists and contains the username
     if (isset($_COOKIE['avatar']) && file_exists($_COOKIE['avatar'])) {
         if (strpos($_COOKIE['avatar'], $username) !== false) {
             unlink($_COOKIE['avatar']);
         }
     }
 
-    // 清除用户身份cookie
+    // Clear user identity cookies
     setcookie("username", "", time() - 3600, "/");
     setcookie("avatar", "", time() - 3600, "/");
 
-    // 处理排行榜数据（需在清除cookie前获取用户名）
+    // Handle leaderboard data (must retrieve username before clearing cookies)
+    // Read the leaderboard data from the JSON file
+    $leaderboardData = json_decode(file_get_contents('leaderboard_data.json'), true);
     if (isset($_COOKIE['leaderboard'])) {
         $leaderboard = unserialize($_COOKIE['leaderboard']);
         if (is_array($leaderboard)) {
-            // 过滤当前用户的所有记录
+            // Filter out all records for the current user
             $leaderboard = array_filter($leaderboard, function($entry) use ($username) {
                 return ($entry['username'] ?? '') !== $username;
             });
-            // 保存更新后的排行榜
+            // Filter out the user's entry from the leaderboard data
+            $leaderboardData = array_filter($leaderboardData, function($entry) use ($username) {
+                return ($entry['username'] ?? '') !== $username;
+            });
+
+            // Save updated leaderboard back to the JSON file
+            file_put_contents('leaderboard_data.json', json_encode(array_values($leaderboardData)));
             setcookie('leaderboard', serialize($leaderboard), time() + 3600, '/');
         }
     }
@@ -36,8 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
     exit();
 }
 
-    
-// 如果用户已登录，则延长 cookie 有效期
+// If the user is logged in, extend the cookie expiration
 if (isset($_COOKIE['username'])) {
     setcookie("username", $_COOKIE['username'], $cookieExpire, "/");
     if (isset($_COOKIE['avatar'])) {
@@ -45,12 +51,12 @@ if (isset($_COOKIE['username'])) {
     }
 }
 ?>
-<!-- 以下为 HTML 代码 -->
-<!-- 永久存在的背景音乐播放器 -->
+<!-- HTML code starts here -->
+<!-- Permanent background music player -->
 <audio id="bgMusic" src="bgmusic.mp3" loop data-turbo-permanent style="display:none;"></audio>
 <link rel="stylesheet" href="css/logout.css">
 <link rel="stylesheet" href="css/navbutton.css">
-<!-- 导航栏 -->
+<!-- Navigation bar -->
 <nav class="navbar navbar-expand-lg navbar-dark">
     <div class="container navbut1 navbar-container">
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -79,7 +85,7 @@ if (isset($_COOKIE['username'])) {
                         <form method="post" class="d-inline" action="navbar.php">
                             <button type="submit" name="logout" 
                                 class="logout"
-                                onclick="return confirm('Are you sure you want to logout?Logging out will permanently delete your account.')">
+                                onclick="return confirm('Are you sure you want to logout? Logging out will permanently delete your account.')">
                                 <div class="sign">
                                     <svg viewBox="0 0 512 512">
                                         <path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path>
@@ -99,7 +105,7 @@ if (isset($_COOKIE['username'])) {
     </div>
 </nav>
 
-<!-- 音乐控制按钮 -->
+<!-- Music control button -->
 <div id="button-container-1" data-turbo-permanent
     style="
     position: fixed; 
@@ -117,10 +123,10 @@ if (isset($_COOKIE['username'])) {
     </div>
 </div>
 
-<!-- 引入 Turbo Drive -->
+<!-- Include Turbo Drive -->
 <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@7.1.0/dist/turbo.min.js"></script>
 <script>
-    // 状态存储键名 - 改用 sessionStorage
+    // State storage key names - using sessionStorage
     const MUSIC_STATE_KEY = 'music_state';
     const DRAG_POSITION_KEY = 'music_control_position';
 
@@ -132,11 +138,11 @@ if (isset($_COOKIE['username'])) {
         offsetY = 0,
         startX = 0,
         startY = 0;
-    const DRAG_THRESHOLD = 5; // 5px 内不算拖动
+    const DRAG_THRESHOLD = 5; // 5px threshold for drag detection
 
     control.addEventListener('mousedown', (e) => {
         isDragging = true;
-        hasDragged = false; // 每次按下重置拖拽标识
+        hasDragged = false; // Reset drag flag on each press
         startX = e.clientX;
         startY = e.clientY;
         const rect = control.getBoundingClientRect();
@@ -152,7 +158,7 @@ if (isset($_COOKIE['username'])) {
                 musicButton.classList.add('playing');
                 saveState();
             }).catch(err => {
-                console.error('播放失败:', err);
+                console.error('Playback failed:', err);
                 musicButton.classList.remove('playing');
             });
         } else {
@@ -164,7 +170,7 @@ if (isset($_COOKIE['username'])) {
 
     document.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
-        // 如果移动距离超过阈值，则认为发生了拖拽
+        // If the movement exceeds the threshold, consider it a drag
         if (!hasDragged && (Math.abs(e.clientX - startX) > DRAG_THRESHOLD || Math.abs(e.clientY - startY) > DRAG_THRESHOLD)) {
             hasDragged = true;
         }
@@ -176,11 +182,11 @@ if (isset($_COOKIE['username'])) {
         }
     });
 
-    // 在拖拽结束时保存位置
+    // Save position on drag end
     document.addEventListener('mouseup', () => {
         isDragging = false;
 
-        // 保存拖拽位置 - 改用 sessionStorage
+        // Save drag position - using sessionStorage
         if (hasDragged) {
             sessionStorage.setItem(DRAG_POSITION_KEY, JSON.stringify({
                 left: parseInt(control.style.left),
@@ -189,40 +195,40 @@ if (isset($_COOKIE['username'])) {
         }
     });
 
-    // 在捕获阶段拦截click事件
+    // Intercept click events during capture phase
     musicButton.addEventListener('click', function(e) {
         if (hasDragged) {
-            // 如果是拖拽产生的click，则阻止事件继续传递（包括inline onclick）
+            // If the click was caused by dragging, prevent further event propagation
             e.stopImmediatePropagation();
             e.preventDefault();
-            // 重置拖拽标记，避免下次点击受影响
+            // Reset drag flag to avoid affecting the next click
             hasDragged = false;
         }
     }, true);
 
-    // 恢复拖拽位置 - 改用 sessionStorage
+    // Restore drag position - using sessionStorage
     const savedPos = sessionStorage.getItem(DRAG_POSITION_KEY);
     if (savedPos) {
         try {
             const pos = JSON.parse(savedPos);
-            // 添加边界检查
+            // Add boundary checks
             const maxX = window.innerWidth - control.offsetWidth;
             const maxY = window.innerHeight - control.offsetHeight;
 
             control.style.left = Math.min(Math.max(pos.left, 0), maxX) + 'px';
             control.style.top = Math.min(Math.max(pos.top, 0), maxY) + 'px';
         } catch (e) {
-            console.error('解析拖拽位置失败', e);
+            console.error('Failed to parse drag position', e);
         }
     }
 
-    // 修改：使用页面中永久的 audio 元素，不再新建 Audio 实例
+    // Use the permanent audio element on the page, no need to create a new Audio instance
     window.bgMusic = document.getElementById('bgMusic');
 
     bgMusic.loop = true;
     bgMusic.autostart = "true";
 
-    // 从 sessionStorage 中恢复状态
+    // Restore state from sessionStorage
     let savedState = {
         playing: false,
         time: 0,
@@ -233,17 +239,17 @@ if (isset($_COOKIE['username'])) {
         const state = sessionStorage.getItem(MUSIC_STATE_KEY);
         if (state) savedState = JSON.parse(state);
     } catch (e) {
-        console.error('状态解析失败', e);
+        console.error('State parsing failed', e);
     }
 
-    let isMusicPlaying = savedState.playing || false; // 从保存的状态初始化
+    let isMusicPlaying = savedState.playing || false; // Initialize from saved state
     if (savedState.playing) {
         const elapsed = (Date.now() - savedState.savedTimestamp) / 1000;
         bgMusic.currentTime = savedState.time + elapsed;
         bgMusic.play().then(() => {
             musicButton.classList.add('playing');
         }).catch(err => {
-            console.log('自动播放失败，需要用户交互', err);
+            console.log('Auto-play failed, user interaction required', err);
             isMusicPlaying = false;
             musicButton.classList.remove('playing');
         });
@@ -256,14 +262,14 @@ if (isset($_COOKIE['username'])) {
     bgMusic.addEventListener('loadedmetadata', () => {
         if (isMusicPlaying) {
             bgMusic.play().catch(err => {
-                console.log('自动播放失败，需要用户交互', err);
+                console.log('Auto-play failed, user interaction required', err);
                 control.classList.remove('playing');
                 isMusicPlaying = false;
             });
         }
     });
 
-    // 在保存位置时同步保存动画状态 - 改用 sessionStorage
+    // Sync animation state when saving position - using sessionStorage
     function saveState() {
         sessionStorage.setItem(MUSIC_STATE_KEY, JSON.stringify({
             playing: !bgMusic.paused,
@@ -274,29 +280,29 @@ if (isset($_COOKIE['username'])) {
         }));
     }
 
-    // 恢复时添加动画状态
+    // Restore animation state
     if (savedState.animationState) {
         musicButton.classList.add('playing');
     }
 
-    // 使用 unload 事件而非 beforeunload 来更准确地保存状态
+    // Use unload event instead of beforeunload for more accurate state saving
     window.addEventListener('unload', saveState);
 
-    // 更频繁地保存状态以确保精确性
+    // Save state more frequently to ensure accuracy
     setInterval(saveState, 500);
 
-    // 修改 turbo:load 事件处理程序，确保恢复播放位置
+    // Modify turbo:load event handler to ensure playback position is restored
     document.addEventListener('turbo:load', () => {
         const savedState = JSON.parse(sessionStorage.getItem(MUSIC_STATE_KEY) || '{}');
 
-        // 恢复音量
+        // Restore volume
         if (savedState.volume) {
             bgMusic.volume = savedState.volume;
         }
 
-        // 重要：恢复播放位置
+        // Important: Restore playback position
         if (savedState.time !== undefined) {
-            // 计算经过的时间（如果正在播放）
+            // Calculate elapsed time if playing
             if (savedState.playing) {
                 const elapsed = (Date.now() - savedState.savedTimestamp) / 1000;
                 bgMusic.currentTime = savedState.time + elapsed;
@@ -305,23 +311,23 @@ if (isset($_COOKIE['username'])) {
             }
         }
 
-        // 恢复播放状态
+        // Restore playback state
         if (savedState.playing && bgMusic.paused) {
             bgMusic.play().then(() => {
                 isMusicPlaying = true;
                 musicButton.classList.add('playing');
             }).catch(err => {
-                console.log('播放恢复失败:', err);
+                console.log('Playback restore failed:', err);
                 isMusicPlaying = false;
                 musicButton.classList.remove('playing');
             });
         }
     });
 
-    // 修改：在页面切换前保存当前播放状态和时间
+    // Save current playback state and time before page switch
     document.addEventListener('turbo:before-visit', () => {
         saveState();
-        // 防止音频重新加载，在 window 对象上保存实际播放状态和时间
+        // Prevent audio from reloading, save actual playback state and time on the window object
         window._bgMusicState = {
             currentTime: bgMusic.currentTime,
             paused: bgMusic.paused,
@@ -329,19 +335,19 @@ if (isset($_COOKIE['username'])) {
         };
     });
 
-    // 修改: 改进处理页面切换时的重载逻辑
+    // Improve handling of reload logic during page switch
     document.addEventListener('turbo:before-render', (event) => {
-        // 保存当前的播放状态
+        // Save current playback state
         saveState();
 
-        // 保存精确的音频元素状态
+        // Save precise audio element state
         const currentState = {
             currentTime: bgMusic.currentTime,
             paused: bgMusic.paused,
             volume: bgMusic.volume
         };
 
-        // 确保新页面中的音频元素保持相同状态
+        // Ensure audio element in new page maintains the same state
         const newBody = event.detail.newBody;
         if (!newBody.querySelector('#bgMusic')) {
             const audioClone = bgMusic.cloneNode(true);
@@ -349,20 +355,20 @@ if (isset($_COOKIE['username'])) {
             newBody.insertBefore(audioClone, newBody.firstChild);
         }
 
-        // 重要：将当前状态存储到 window 对象和 sessionStorage 中
+        // Important: Store current state in window object and sessionStorage
         window._bgMusicPreciseState = currentState;
         sessionStorage.setItem('_bgMusicPreciseState', JSON.stringify(currentState));
     });
 
-    // 修改：确保在新页面渲染后音频状态正确恢复
+    // Ensure audio state is correctly restored after new page rendering
     document.addEventListener('turbo:render', () => {
-        // 获取对新页面中音频元素的引用
+        // Get reference to audio element in new page
         const audio = document.getElementById('bgMusic');
 
-        // 首先尝试从 window 对象恢复状态
+        // First try to restore state from window object
         let preciseState = window._bgMusicPreciseState;
 
-        // 如果 window 对象中没有，则从 sessionStorage 中恢复
+        // If not available, restore from sessionStorage
         if (!preciseState) {
             try {
                 const savedPreciseState = sessionStorage.getItem('_bgMusicPreciseState');
@@ -370,24 +376,24 @@ if (isset($_COOKIE['username'])) {
                     preciseState = JSON.parse(savedPreciseState);
                 }
             } catch (e) {
-                console.error('无法从 sessionStorage 恢复精确状态', e);
+                console.error('Failed to restore precise state from sessionStorage', e);
             }
         }
 
-        // 从精确保存的状态恢复
+        // Restore from precisely saved state
         if (preciseState) {
-            // 恢复音量
+            // Restore volume
             audio.volume = preciseState.volume;
 
-            // 恢复播放位置
+            // Restore playback position
             audio.currentTime = preciseState.currentTime;
 
-            // 恢复播放状态
+            // Restore playback state
             if (!preciseState.paused) {
                 audio.play().then(() => {
                     musicButton.classList.add('playing');
                 }).catch(e => {
-                    console.error('无法恢复播放:', e);
+                    console.error('Failed to restore playback:', e);
                     musicButton.classList.remove('playing');
                 });
             } else {
@@ -395,13 +401,13 @@ if (isset($_COOKIE['username'])) {
                 musicButton.classList.remove('playing');
             }
 
-            // 清理
+            // Cleanup
             delete window._bgMusicPreciseState;
             sessionStorage.removeItem('_bgMusicPreciseState');
         }
     });
 
-    // 修改点击事件处理
+    // Modify click event handling
     control.addEventListener('click', (e) => {
         if (e.target !== musicButton) return;
 
@@ -410,7 +416,7 @@ if (isset($_COOKIE['username'])) {
             bgMusic.play().then(() => {
                 musicButton.classList.add('playing');
             }).catch(err => {
-                console.error('播放失败:', err);
+                console.error('Playback failed:', err);
                 isMusicPlaying = false;
                 musicButton.classList.remove('playing');
             });
@@ -421,7 +427,7 @@ if (isset($_COOKIE['username'])) {
         saveState();
     });
 
-    // 确保音频元素不被 Turbo Drive 重新加载
+    // Ensure audio element is not reloaded by Turbo Drive
     bgMusic.setAttribute('data-turbo-permanent', '');
     control.setAttribute('data-turbo-permanent', '');
 </script>
