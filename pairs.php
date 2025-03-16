@@ -1,24 +1,27 @@
 <?php
-// Fixed cookie handling logic
-if (isset($_COOKIE['leaderboard'])) {
-    $leaderboardHighScores = unserialize($_COOKIE['leaderboard']); // Changed to unserialize    
-    // Added validation step: ensure the decoded value is a valid array
-    if (!is_array($leaderboardHighScores)) {
-        $leaderboardHighScores = ['1' => 0, '2' => 0, '3' => 0]; // Default scores if invalid
-    }
-} else {
-    $leaderboardHighScores = ['1' => 0, '2' => 0, '3' => 0]; // Default scores if cookie does not exist
-}
+// get the highest score for each level.
+$leaderboardFile = 'leaderboard_data.json';
+$leaderboardHighScores = ['1' => 0, '2' => 0, '3' => 0];
 
-// Added key existence check
-foreach (['1', '2', '3'] as $level) {
-    if (!isset($leaderboardHighScores[$level]) || $leaderboardHighScores[$level] < 0) {
-        $leaderboardHighScores[$level] = 0; // Ensure scores are non-negative
+if (file_exists($leaderboardFile)) {
+    $allScores = json_decode(file_get_contents($leaderboardFile), true) ?: [];
+    
+    foreach ([1, 2, 3] as $level) {
+        // Ensure the handling of level values of numeric type.
+        $levelKey = "level$level";
+        $scores = [];
+        
+        foreach ($allScores as $entry) {
+            if (isset($entry[$levelKey])) {
+                $scores[] = (int)$entry[$levelKey];
+            }
+        }
+        
+        // At least include 0 points to ensure there is data.
+        $scores[] = 0;
+        $leaderboardHighScores[(string)$level] = max($scores);
     }
 }
-
-// Set the cookie with serialized high scores, expires in 1 hour
-setcookie('leaderboard', serialize($leaderboardHighScores), time() + 3600, "/"); // Changed to serialize
 ?>
 <script>
     // Pass the leaderboard high scores to JavaScript
@@ -91,7 +94,7 @@ setcookie('leaderboard', serialize($leaderboardHighScores), time() + 3600, "/");
                     <div class="btn1">
                         Medium<span aria-hidden=""></span>
                         <span class="btn1__glitch" aria-hidden="">Medium</span>
-                        <label class="number">r3</label>
+                        <label class="number">r2</label>
                     </div>
                 </div>
 
@@ -100,7 +103,7 @@ setcookie('leaderboard', serialize($leaderboardHighScores), time() + 3600, "/");
                     <div class="btn1">
                         Complex<span aria-hidden="">_</span>
                         <span class="btn1__glitch" aria-hidden="">Complex</span>
-                        <label class="number">r2</label>
+                        <label class="number">r3</label>
                     </div>
                 </div>
             </div>
@@ -145,7 +148,8 @@ setcookie('leaderboard', serialize($leaderboardHighScores), time() + 3600, "/");
                 <?php if (isset($_COOKIE['username'])): ?>
                     <div class="mt-3">
                         <!-- Form wrapping neon button for score submission -->
-                        <form action="submit_score.php" method="post">
+                        <form action="leaderboard.php" method="post">
+                            <input type="hidden" name="level" value="<?php echo $gameState['level']; ?>">
                             <input class="input-btn" type="radio" id="submit-score" name="action" value="submit-score" checked>
                             <label class="neon-btn" for="submit-score">
                                 <span class="span"></span>
@@ -435,21 +439,21 @@ setcookie('leaderboard', serialize($leaderboardHighScores), time() + 3600, "/");
             gameState.cards = [];
 
 
-            // 生成随机种子数组（每组一个唯一种子）
+            // Generate a random array of seeds (each group contains only one unique seed).
             const groupSeeds = matchGroups.map(() => Math.floor(Math.random() * 1000));
 
-            // 创建卡片值数组（基于组索引）
+            // Create a card value array (based on group index).
             let cardValues = [];
             matchGroups.forEach((group, groupIndex) => {
                 group.forEach(() => {
-                    cardValues.push(groupSeeds[groupIndex]); // 使用组级种子
+                    cardValues.push(groupSeeds[groupIndex]); 
                 });
             });
 
 
 
             // Shuffle card values
-            // cardValues = shuffleArray(cardValues);
+             cardValues = shuffleArray(cardValues);
 
 
             // Create card elements
@@ -477,365 +481,367 @@ setcookie('leaderboard', serialize($leaderboardHighScores), time() + 3600, "/");
             });
         }
 
-            // Generate emoji combination
-            function generateEmojiCombination(seed) {
-                //Using a hash algorithm to increase randomness
-                const hash = (s) => {
-                    let h = 0xdeadbeef;
-                    for (let i = 0; i < s.length; i++) {
-                        h = Math.imul(h ^ s.charCodeAt(i), 2654435761);
-                    }
-                    return (h ^ h >>> 16) >>> 0;
-                };
+        // Generate emoji combination
+        function generateEmojiCombination(seed) {
+            //Using a hash algorithm to increase randomness
+            const hash = (s) => {
+                let h = 0xdeadbeef;
+                for (let i = 0; i < s.length; i++) {
+                    h = Math.imul(h ^ s.charCodeAt(i), 2654435761);
+                }
+                return (h ^ h >>> 16) >>> 0;
+            };
 
-                const hashedSeed = hash(seed.toString());
+            const hashedSeed = hash(seed.toString());
 
-                // Obtain indices of different parts through bitwise operations.
-                const skinIndex = (hashedSeed & 0b11) % 3 + 1; // 3种皮肤
-                const eyesIndex = ((hashedSeed >> 2) & 0b111) % 6 + 1; // 6种眼睛
-                const mouthIndex = ((hashedSeed >> 5) & 0b111) % 6 + 1; // 6种嘴巴
+            // Obtain indices of different parts through bitwise operations.
+            const skinIndex = (hashedSeed & 0b11) % 3 + 1; // 3种皮肤
+            const eyesIndex = ((hashedSeed >> 2) & 0b111) % 6 + 1; // 6种眼睛
+            const mouthIndex = ((hashedSeed >> 5) & 0b111) % 6 + 1; // 6种嘴巴
 
-                return {
-                    skin: `skin${skinIndex}`,
-                    eyes: `eyes${eyesIndex}`,
-                    mouth: `mouth${mouthIndex}`
-                };
-            }
+            return {
+                skin: `skin${skinIndex}`,
+                eyes: `eyes${eyesIndex}`,
+                mouth: `mouth${mouthIndex}`
+            };
+        }
 
-            // Create emoji element from components
-            function createEmojiElement(emojiData) {
-                return `
+        // Create emoji element from components
+        function createEmojiElement(emojiData) {
+            return `
                 <div style="position: relative; width: 60px; height: 60px;">
                     <img src="emoji_assets/skin/${emojiData.skin}.png" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
                     <img src="emoji_assets/eyes/${emojiData.eyes}.png" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
                     <img src="emoji_assets/mouth/${emojiData.mouth}.png" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
                 </div>
             `;
+        }
+
+        // Flip card
+        function flipCard(card) {
+            // Ignore if game not running or card already flipped/matched
+            if (!gameState.isGameRunning ||
+                gameState.flippedCards.includes(card) ||
+                gameState.matchedCards.includes(card)) {
+                return;
             }
 
-            // Flip card
-            function flipCard(card) {
-                // Ignore if game not running or card already flipped/matched
-                if (!gameState.isGameRunning ||
-                    gameState.flippedCards.includes(card) ||
-                    gameState.matchedCards.includes(card)) {
-                    return;
-                }
+            // Play flip sound
+            flipSound.currentTime = 0;
+            flipSound.play();
 
-                // Play flip sound
-                flipSound.currentTime = 0;
-                flipSound.play();
+            // Flip the card
+            card.classList.add('flipped');
+            gameState.flippedCards.push(card);
 
-                // Flip the card
-                card.classList.add('flipped');
-                gameState.flippedCards.push(card);
+            // Check for match if enough cards are flipped
+            if (gameState.flippedCards.length === gameState.cardsToMatch) {
+                gameState.attempts++;
+                attemptsElement.textContent = gameState.attempts; // Update attempts
 
-                // Check for match if enough cards are flipped
-                if (gameState.flippedCards.length === gameState.cardsToMatch) {
-                    gameState.attempts++;
-                    attemptsElement.textContent = gameState.attempts; // Update attempts
-
-                    // Check if all flipped cards match
-                    const allMatch = gameState.flippedCards.every(c =>
-                        c.dataset.seed === gameState.flippedCards[0].dataset.seed);
+                // Check if all flipped cards match
+                const allMatch = gameState.flippedCards.every(c =>
+                    c.dataset.seed === gameState.flippedCards[0].dataset.seed);
 
 
-                    if (allMatch) {
-                        // Match found
-                        matchSound.currentTime = 0;
-                        matchSound.play();
+                if (allMatch) {
+                    // Match found
+                    matchSound.currentTime = 0;
+                    matchSound.play();
 
-                        // Mark cards as matched
-                        gameState.flippedCards.forEach(c => {
-                            c.classList.add('matched');
-                            gameState.matchedCards.push(c);
-                        });
+                    // Mark cards as matched
+                    gameState.flippedCards.forEach(c => {
+                        c.classList.add('matched');
+                        gameState.matchedCards.push(c);
+                    });
 
-                        // Clear flipped cards
-                        gameState.flippedCards = [];
-
-                        // Check if all cards are matched
-                        if (gameState.matchedCards.length === gameState.cards.length) {
-                            // Level completed
-                            handleLevelComplete();
-                        }
-                    } else {
-                        // No match, flip cards back after delay
-                        setTimeout(() => {
-                            gameState.flippedCards.forEach(c => {
-                                c.classList.remove('flipped');
-                            });
-                            gameState.flippedCards = [];
-                            gameState.failures++; // Increment failure count
-                            updateLives(); // Update lives display
-
-                            // Check if exceeded allowed failure count
-                            let allowedFailures = getFailureThreshold();
-                            if (gameState.failures >= allowedFailures) {
-                                alert("Game Over! Too many wrong guesses.");
-                                endGame();
-                                return;
-                            }
-                        }, 1000);
-                    }
-                }
-            }
-
-            // Handle level completion
-            function handleLevelComplete() {
-                gameState.failures = 0; // Reset failures
-                updateLives(); // Update lives display
-                // Calculate score for the level
-                const levelScore = calculateScore();
-
-
-                // Store level score
-                gameState.levelScores[gameState.currentLevel] = levelScore;
-
-                // Trigger confetti celebration
-                triggerConfetti();
-
-                // Only show gold background if score exceeds leaderboard high score
-                if (levelScore > Number(leaderboardHighScores[gameState.currentLevel])) {
-                    document.querySelector('.game-container').classList.add('gold-bg');
-
-                    setTimeout(() => {
-                        document.querySelector('.game-container').classList.remove('gold-bg');
-                    }, 3000);
-                }
-
-                // Update total score
-                gameState.score += levelScore;
-                scoreElement.textContent = gameState.score;
-
-                // Check if complex mode and more levels to go
-                if (gameState.gameMode === 3 && gameState.currentLevel < 3) {
-                    // Move to next level
-                    gameState.currentLevel++;
-                    currentLevelElement.textContent = gameState.currentLevel;
-                    updateLives();
-
-                    // Reset for next level
-                    gameState.matchedCards = [];
+                    // Clear flipped cards
                     gameState.flippedCards = [];
 
-                    // Set up cards for next level
-                    setTimeout(() => {
-                        setupCards();
-                    }, 1500);
+                    // Check if all cards are matched
+                    if (gameState.matchedCards.length === gameState.cards.length) {
+                        // Level completed
+                        handleLevelComplete();
+                    }
                 } else {
-                    // Game completed
-                    endGame();
-                }
-            }
+                    // No match, flip cards back after delay
+                    setTimeout(() => {
+                        gameState.flippedCards.forEach(c => {
+                            c.classList.remove('flipped');
+                        });
+                        gameState.flippedCards = [];
+                        gameState.failures++; // Increment failure count
+                        updateLives(); // Update lives display
 
-            // Calculate score based on attempts and time
-            function calculateScore() {
-                // Base score
-                let baseScore = 100;
-
-                // Penalty for attempts (more attempts = lower score)
-                const attemptsPenalty = gameState.attempts;
-
-                // Penalty for time (more time = lower score)
-                const timePenalty = Math.floor(gameState.elapsedTime * 2);
-
-                // Calculate final score
-                let finalScore = baseScore - attemptsPenalty - timePenalty;
-
-                // Ensure score is not negative
-                return Math.max(finalScore, 0);
-            }
-
-            // End the game
-            function endGame() {
-                // Stop timer
-                clearInterval(gameState.timerInterval);
-
-                // Play success sound
-                successSound.currentTime = 0;
-                successSound.play();
-
-                // Show grand confetti celebration for game completion
-                triggerConfetti(true);
-
-                // Update final score and time
-                finalScoreElement.textContent = gameState.score;
-                finalTimeElement.textContent = gameState.elapsedTime;
-
-                // Show game end screen
-                gameEndElement.style.display = 'block';
-
-                // Game is no longer running
-                gameState.isGameRunning = false;
-            }
-
-            // Submit score to leaderboard
-            function submitScore() {
-                // Create form data
-                const formData = new FormData();
-                formData.append(`level_${gameState.level}`, gameState.score); // 提交当前关卡分数
-
-
-
-                // Send POST request to leaderboard.php
-                fetch('leaderboard.php', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.text())
-                    .then(data => {
-                        if (data.includes('success')) { // 修改这里
-                            // Redirect to leaderboard
-                            window.location.href = 'leaderboard.php';
-                        } else {
-                            console.error('Error submitting score:', data);
-                            alert('Error submitting score. Please try again.');
+                        // Check if exceeded allowed failure count
+                        let allowedFailures = getFailureThreshold();
+                        if (gameState.failures >= allowedFailures) {
+                            alert("Game Over! Too many wrong guesses.");
+                            endGame();
+                            return;
                         }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Error submitting score. Please try again.');
-                    });
-            }
-
-
-            // 新增：根据游戏模式返回允许的最大时间（秒）
-            function getTimeLimit() {
-                if (gameState.gameMode === 1) {
-                    return 15;
-                } else if (gameState.gameMode === 2) {
-                    return 45;
-                } else if (gameState.gameMode === 3) {
-                    if (gameState.currentLevel === 1) return 15;
-                    else if (gameState.currentLevel === 2) return 45;
-                    else if (gameState.currentLevel === 3) return 60;
+                    }, 1000);
                 }
-                return Infinity;
+            }
+        }
+        // Handle level completion
+        function handleLevelComplete() {
+            gameState.failures = 0; // Reset failures
+            updateLives(); // Update lives display
+            // Calculate score for the level
+            const levelScore = calculateScore();
+
+
+            // Store level score
+            gameState.levelScores[gameState.currentLevel] = levelScore;
+
+            // Trigger confetti celebration
+            triggerConfetti();
+
+            // Only show gold background if score exceeds leaderboard high score
+            if (levelScore > leaderboardHighScores[gameState.currentLevel.toString()]) {
+                document.querySelector('.game-container').classList.add('gold-bg');
+
+                setTimeout(() => {
+                    document.querySelector('.game-container').classList.remove('gold-bg');
+                }, 3000);
             }
 
-            // Reset game
-            function resetGame() {
-                // 停止计时器
-                clearInterval(gameState.timerInterval);
+            // Update total score
+            gameState.score += levelScore;
+            scoreElement.textContent = gameState.score;
 
-                // 重置游戏状态变量
-                gameState.isGameRunning = false;
-                gameState.failures = 0;
-                gameState.attempts = 0;
-                gameState.score = 0;
-                gameState.elapsedTime = 0;
+
+
+            // Check if complex mode and more levels to go
+            if (gameState.gameMode === 3 && gameState.currentLevel < 3) {
+                // Move to next level
+                gameState.currentLevel++;
+                currentLevelElement.textContent = gameState.currentLevel;
+                updateLives();
+
+                // Reset for next level
                 gameState.matchedCards = [];
                 gameState.flippedCards = [];
 
-                // 更新UI显示的值
-                attemptsElement.textContent = "0";
-                timerElement.textContent = "0";
-                scoreElement.textContent = "0";
-                currentLevelElement.textContent = "1";
-
-                // 隐藏结束界面
-                gameEndElement.style.display = 'none';
-
-                // 显示关卡选择区域和开始按钮（使用 class 选择器）
-                document.querySelector('.level-container').style.display = 'flex';
-                startButton.style.display = 'block';
-
-                // 隐藏游戏状态面板
-                gameStats.style.display = 'none';
-
-                // 清空卡片容器
-                cardContainer.innerHTML = '';
+                // Set up cards for next level
+                setTimeout(() => {
+                    setupCards();
+                }, 1500);
+            } else {
+                // Game completed
+                endGame();
             }
+        }
 
-            // Start timer
-            function startTimer() {
-                gameState.startTime = Date.now();
-                gameState.elapsedTime = 0;
+        // Calculate score based on attempts and time
+        function calculateScore() {
+            // Base score
+            let baseScore = 100;
 
-                gameState.timerInterval = setInterval(() => {
-                    gameState.elapsedTime = Math.floor((Date.now() - gameState.startTime) / 1000);
-                    timerElement.textContent = gameState.elapsedTime;
+            // Penalty for attempts (more attempts = lower score)
+            const attemptsPenalty = gameState.attempts;
 
-                    if (gameState.elapsedTime >= getTimeLimit()) {
-                        alert("Time's up!");
-                        endGame();
-                        clearInterval(gameState.timerInterval);
+            // Penalty for time (more time = lower score)
+            const timePenalty = Math.floor(gameState.elapsedTime * 2);
+
+            // Calculate final score
+            let finalScore = baseScore - attemptsPenalty - timePenalty;
+
+            // Ensure score is not negative
+            return Math.max(finalScore, 0);
+        }
+
+        // End the game
+        function endGame() {
+            // Stop timer
+            clearInterval(gameState.timerInterval);
+
+            // Play success sound
+            successSound.currentTime = 0;
+            successSound.play();
+
+            // Show grand confetti celebration for game completion
+            triggerConfetti(true);
+
+            // Update final score and time
+            finalScoreElement.textContent = gameState.score;
+            finalTimeElement.textContent = gameState.elapsedTime;
+
+            // Show game end screen
+            gameEndElement.style.display = 'block';
+
+            // Game is no longer running
+            gameState.isGameRunning = false;
+        }
+
+        // Submit score to leaderboard
+        function submitScore() {
+            // Create form data
+            const formData = new FormData();
+            formData.append(`level_${gameState.level}`, gameState.score); //Submit current level score
+
+
+
+            // Send POST request to leaderboard.php
+            fetch('leaderboard.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.text())
+                .then(data => {
+                    if (data.includes('success')) {
+                        // Redirect to leaderboard
+                        window.location.href = 'leaderboard.php';
+                    } else {
+                        console.error('Error submitting score:', data);
+                        alert('Error submitting score. Please try again.');
                     }
-                }, 1000);
-            }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error submitting score. Please try again.');
+                });
+        }
 
-            // Utility function to shuffle array
-            function shuffleArray(array) {
-                const newArray = [...array];
-                for (let i = newArray.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+
+        //Return the maximum allowed time (in seconds) based on the game mode.
+        function getTimeLimit() {
+            if (gameState.gameMode === 1) {
+                return 15;
+            } else if (gameState.gameMode === 2) {
+                return 45;
+            } else if (gameState.gameMode === 3) {
+                if (gameState.currentLevel === 1) return 15;
+                else if (gameState.currentLevel === 2) return 45;
+                else if (gameState.currentLevel === 3) return 60;
+            }
+            return Infinity;
+        }
+
+        // Reset game
+        function resetGame() {
+            //Stop the timer
+
+            clearInterval(gameState.timerInterval);
+
+            // Reset game state variables.
+            gameState.isGameRunning = false;
+            gameState.failures = 0;
+            gameState.attempts = 0;
+            gameState.score = 0;
+            gameState.elapsedTime = 0;
+            gameState.matchedCards = [];
+            gameState.flippedCards = [];
+
+            // Update the value displayed on the UI.
+            attemptsElement.textContent = "0";
+            timerElement.textContent = "0";
+            scoreElement.textContent = "0";
+            currentLevelElement.textContent = "1";
+
+            //Hide the ending screen.
+            gameEndElement.style.display = 'none';
+
+            //Display the level selection area and the start button (using a class selector).
+            document.querySelector('.level-container').style.display = 'flex';
+            startButton.style.display = 'block';
+
+            // Hide game status panel
+            gameStats.style.display = 'none';
+
+            //Clear the card container.
+            cardContainer.innerHTML = '';
+        }
+
+        // Start timer
+        function startTimer() {
+            gameState.startTime = Date.now();
+            gameState.elapsedTime = 0;
+
+            gameState.timerInterval = setInterval(() => {
+                gameState.elapsedTime = Math.floor((Date.now() - gameState.startTime) / 1000);
+                timerElement.textContent = gameState.elapsedTime;
+
+                if (gameState.elapsedTime >= getTimeLimit()) {
+                    alert("Time's up!");
+                    endGame();
+                    clearInterval(gameState.timerInterval);
                 }
-                return newArray;
-            }
+            }, 1000);
+        }
 
-            // Function to trigger confetti celebration
-            function triggerConfetti(isGameEnd = false) {
-                // Default confetti for level completion
-                const options = {
-                    particleCount: 100,
-                    spread: 70,
-                    origin: {
-                        y: 0.6
-                    }
+        // Utility function to shuffle array
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        // Function to trigger confetti celebration
+        function triggerConfetti(isGameEnd = false) {
+            // Default confetti for level completion
+            const options = {
+                particleCount: 100,
+                spread: 70,
+                origin: {
+                    y: 0.6
+                }
+            };
+
+            // More elaborate confetti for game end
+            if (isGameEnd) {
+                // Create a grand finale with multiple bursts
+                const duration = 3000;
+                const animationEnd = Date.now() + duration;
+                const defaults = {
+                    startVelocity: 30,
+                    spread: 360,
+                    ticks: 60,
+                    zIndex: 0
                 };
 
-                // More elaborate confetti for game end
-                if (isGameEnd) {
-                    // Create a grand finale with multiple bursts
-                    const duration = 3000;
-                    const animationEnd = Date.now() + duration;
-                    const defaults = {
-                        startVelocity: 30,
-                        spread: 360,
-                        ticks: 60,
-                        zIndex: 0
-                    };
+                const interval = setInterval(function() {
+                    const timeLeft = animationEnd - Date.now();
 
-                    const interval = setInterval(function() {
-                        const timeLeft = animationEnd - Date.now();
+                    if (timeLeft <= 0) {
+                        return clearInterval(interval);
+                    }
 
-                        if (timeLeft <= 0) {
-                            return clearInterval(interval);
+                    const particleCount = 50 * (timeLeft / duration);
+
+                    // Random colors and positions
+                    confetti(Object.assign({}, defaults, {
+                        particleCount,
+                        origin: {
+                            x: randomInRange(0.1, 0.3),
+                            y: Math.random() - 0.2
                         }
-
-                        const particleCount = 50 * (timeLeft / duration);
-
-                        // Random colors and positions
-                        confetti(Object.assign({}, defaults, {
-                            particleCount,
-                            origin: {
-                                x: randomInRange(0.1, 0.3),
-                                y: Math.random() - 0.2
-                            }
-                        }));
-                        confetti(Object.assign({}, defaults, {
-                            particleCount,
-                            origin: {
-                                x: randomInRange(0.7, 0.9),
-                                y: Math.random() - 0.2
-                            }
-                        }));
-                    }, 250);
-                } else {
-                    // Simple confetti burst for level completion
-                    confetti(options);
-                }
+                    }));
+                    confetti(Object.assign({}, defaults, {
+                        particleCount,
+                        origin: {
+                            x: randomInRange(0.7, 0.9),
+                            y: Math.random() - 0.2
+                        }
+                    }));
+                }, 250);
+            } else {
+                // Simple confetti burst for level completion
+                confetti(options);
             }
+        }
 
-            // Helper function for random range
-            function randomInRange(min, max) {
-                return Math.random() * (max - min) + min;
-            }
+        // Helper function for random range
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
 
-            // Initialize the game when the page loads
-            document.addEventListener('DOMContentLoaded', init);
+        // Initialize the game when the page loads
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
