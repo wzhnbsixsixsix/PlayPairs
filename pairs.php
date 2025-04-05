@@ -361,13 +361,13 @@ if (file_exists($leaderboardFile)) {
         // Get the maximum number of allowed failures based on current mode
         function getFailureThreshold() {
             if (gameState.gameMode === 1) {
-                return 4; // Simple mode
+                return 5; // Simple mode
             } else if (gameState.gameMode === 2) {
-                return 6; // Medium mode
+                return 8; // Medium mode
             } else if (gameState.gameMode === 3) {
-                if (gameState.currentLevel === 1) return 4; // Level 1
-                else if (gameState.currentLevel === 2) return 6; // Level 2
-                else if (gameState.currentLevel === 3) return 9; // Level 3
+                if (gameState.currentLevel === 1) return 5; // Level 1
+                else if (gameState.currentLevel === 2) return 8; // Level 2
+                else if (gameState.currentLevel === 3) return 11; // Level 3
             }
             return Infinity; // Default case
         }
@@ -708,13 +708,13 @@ if (file_exists($leaderboardFile)) {
         //Return the maximum allowed time (in seconds) based on the game mode.
         function getTimeLimit() {
             if (gameState.gameMode === 1) {
-                return 15;
+                return 20;
             } else if (gameState.gameMode === 2) {
-                return 45;
+                return 50;
             } else if (gameState.gameMode === 3) {
-                if (gameState.currentLevel === 1) return 15;
-                else if (gameState.currentLevel === 2) return 45;
-                else if (gameState.currentLevel === 3) return 60;
+                if (gameState.currentLevel === 1) return 20;
+                else if (gameState.currentLevel === 2) return 50;
+                else if (gameState.currentLevel === 3) return 90;
             }
             return Infinity;
         }
